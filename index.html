@@ -581,12 +581,130 @@
       font-weight: 850;
     }
 
-    .thrill-step {
-      display: none;
+
+    .date-picker {
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 24px;
+      background: rgba(0,0,0,.16);
+      padding: 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
     }
 
-    .thrill-step.active {
-      display: block;
+    .calendar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .calendar-head strong {
+      font-size: 18px;
+      color: var(--cream);
+      letter-spacing: .01em;
+      text-align: center;
+    }
+
+    .calendar-nav {
+      min-height: 42px;
+      min-width: 42px;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      box-shadow: none;
+      color: var(--text);
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.18);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .calendar-weekday {
+      text-align: center;
+      color: var(--soft);
+      font-size: 12px;
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      padding: 4px 0 8px;
+    }
+
+    .calendar-day {
+      min-height: 44px;
+      width: 100%;
+      padding: 0;
+      border-radius: 14px;
+      background: rgba(255,255,255,.095);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.15);
+      box-shadow: none;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .calendar-day:hover:not(:disabled) {
+      background: rgba(255,255,255,.18);
+    }
+
+    .calendar-day.selected {
+      background: linear-gradient(135deg, rgba(143,240,189,.95), rgba(255,232,189,.95));
+      color: #1b1018;
+      border-color: rgba(255,255,255,.55);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0,0,0,.24);
+    }
+
+    .calendar-day.unavailable,
+    .calendar-day.past {
+      opacity: .34;
+      background: rgba(255,255,255,.045);
+      color: rgba(255,245,234,.45);
+      cursor: not-allowed;
+      text-decoration: line-through;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .calendar-day.mallorca {
+      opacity: .5;
+      border-style: dashed;
+      color: rgba(255,232,189,.65);
+    }
+
+    .calendar-empty {
+      min-height: 44px;
+    }
+
+    .date-selected-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+      font-weight: 750;
+    }
+
+    .calendar-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      color: var(--soft);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .legend-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
     }
 
 
@@ -598,10 +716,28 @@
       h2 { font-size: clamp(36px, 12vw, 58px); }
       .button-row { gap: 11px; }
       button, .link-button { width: 100%; }
-      .runaway-zone { min-height: 170px; }
+      .runaway-zone {
+        min-height: 330px;
+        align-content: flex-start;
+      }
+      .runaway-zone .yes {
+        width: 100%;
+      }
+      .runaway-zone .no {
+        width: auto;
+        min-width: 92px;
+        max-width: 118px;
+        min-height: 44px;
+        padding: 10px 15px;
+        font-size: 15px;
+        align-self: flex-start;
+      }
       .progress { top: 14px; right: 14px; }
       .chip span { width: 100%; justify-content: center; }
       .chip { flex: 1 1 100%; }
+      .calendar-grid { gap: 5px; }
+      .calendar-day, .calendar-empty { min-height: 40px; }
+      .calendar-head strong { font-size: 16px; }
     }
   </style>
 </head>
@@ -642,8 +778,23 @@
 
         <div class="panel">
           <div class="option-group">
-            <label for="date">Wunschtermin</label>
-            <input id="date" type="date" />
+            <label>Wunschtermin</label>
+            <div class="date-picker" id="date-picker" aria-label="Kalender für den Wunschtermin">
+              <div class="calendar-head">
+                <button class="calendar-nav" id="calendar-prev" type="button" aria-label="Vorheriger Monat">‹</button>
+                <strong id="calendar-title">Monat</strong>
+                <button class="calendar-nav" id="calendar-next" type="button" aria-label="Nächster Monat">›</button>
+              </div>
+              <div class="calendar-grid" id="calendar-weekdays" aria-hidden="true"></div>
+              <div class="calendar-grid" id="calendar-days"></div>
+              <div class="date-selected-note" id="selected-date-note">Bitte einen verfügbaren Tag auswählen.</div>
+              <div class="calendar-legend">
+                <span class="legend-pill">✦ hell = verfügbar</span>
+                <span class="legend-pill">grau = da kann ich nicht</span>
+                <span class="legend-pill">gestrichelt = Mallorca-Ausnahme 😌</span>
+              </div>
+            </div>
+            <input id="date" type="hidden" />
           </div>
 
           <div class="option-group">
@@ -813,53 +964,37 @@ const firebaseConfig = {
   <div class="modal-backdrop thrill-modal" id="thrill-modal">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="thrill-modal-title">
       <div class="small-caps">Nervenkitzel freigeschaltet</div>
-
-      <div class="thrill-step active" id="thrill-warning-step">
-        <h3 id="thrill-modal-title">Okay. Das wird jetzt eine Spur intensiver.</h3>
-        <p>
-          Ab hier verlassen wir kurz die brav geplante Verabredung und betreten den Bereich
-          „könnte eine sehr gute Geschichte werden“. Keine Sorge: Erst bestätigen, dann Chaos.
-        </p>
-        <div class="thrill-warning">
-          Kleiner Hinweis: Wenn du weitergehst, öffnen sich ein paar Optionen mit deutlich mehr Nervenkitzel. 😈
-        </div>
-
-        <div class="button-row">
-          <button class="primary" id="thrill-warning-continue" type="button">Okay, zeig mir die Optionen →</button>
-          <button class="secondary" id="thrill-warning-back" type="button">Nur die Ruhe, erstmal langsam</button>
-        </div>
+      <h3 id="thrill-modal-title">Okay. Das wird jetzt eine Spur intensiver.</h3>
+      <p>
+        Ab hier verlassen wir kurz die brav geplante Verabredung und betreten den Bereich
+        „könnte eine sehr gute Geschichte werden“. Such dir aus, wie viel Chaos du mir erlaubst.
+      </p>
+      <div class="thrill-warning">
+        Kleiner Hinweis: Wenn du hier etwas auswählst, darfst du später nicht so tun, als wäre das alles komplett überraschend passiert. 😈
       </div>
 
-      <div class="thrill-step" id="thrill-options-step">
-        <h3>Wie viel Nervenkitzel darf es sein?</h3>
-        <p>
-          Such dir eine Variante aus. Danach landet sie ganz normal in der Zusammenfassung.
-        </p>
+      <div class="thrill-options" aria-label="Nervenkitzel-Optionen">
+        <button class="secondary thrill-option" type="button" data-thrill="Andere Stadt">
+          🚗 Eine Nacht irgendwo hin fahren
+        </button>
+        <button class="secondary thrill-option" type="button" data-thrill="Sexshop schlendern und sehr erwachsen so tun, als wäre alles ganz normal">
+          🛍️ Sexshop schlendern und über vorlieben quatschen?
+        </button>
+        <button class="secondary thrill-option" type="button" data-thrill="Ziel bleibt geheim, du bekommst nur Uhrzeit und Treffpunkt">
+          Wir machen Toywichteln und schaun mal was bei rum kommt
+        </button>
+        <button class="secondary thrill-option" type="button" data-thrill="Wir würfeln spontan: Ort, Drink und eine kleine Mutprobe">
+          🎲 Wir würfeln spontan: Du bringst 2 Würfel und ich bringe 2 Würfel :D Dann schaun wir mal
+        </button>
+           <button class="secondary thrill-option" type="button" data-thrill="Mach doch was du willst mit mir ">
+          Mach was du willst, gerne alles zusammen &#x1F480; 
+        </button>
+      </div>
 
-        <div class="thrill-options" aria-label="Nervenkitzel-Optionen">
-          <button class="secondary thrill-option" type="button" data-thrill="Andere Stadt">
-            🚗 Eine Nacht irgendwo hin fahren
-          </button>
-          <button class="secondary thrill-option" type="button" data-thrill="Sexshop schlendern und über Vorlieben quatschen">
-            🛍️ Sexshop schlendern und über Vorlieben quatschen?
-          </button>
-          <button class="secondary thrill-option" type="button" data-thrill="Toywichteln und schauen, was bei rum kommt">
-            🎁 Wir machen Toywichteln und schauen mal, was bei rum kommt
-          </button>
-          <button class="secondary thrill-option" type="button" data-thrill="Wir würfeln spontan: Du bringst 2 Würfel und ich bringe 2 Würfel">
-            🎲 Wir würfeln spontan: Du bringst 2 Würfel und ich bringe 2 Würfel :D Dann schauen wir mal
-          </button>
-          <button class="secondary thrill-option" type="button" data-thrill="Mach doch, was du willst mit mir">
-            Mach was du willst, gerne alles zusammen &#x1F480;
-          </button>
-        </div>
+      <div class="thrill-selected-note" id="thrill-selected-note">Noch nichts ausgewählt.</div>
 
-        <div class="thrill-selected-note" id="thrill-selected-note">Noch nichts ausgewählt.</div>
-
-        <div class="button-row">
-          <button class="primary" id="thrill-modal-close" type="button">Auswahl übernehmen</button>
-          <button class="secondary" id="thrill-options-back" type="button">Doch lieber zurück</button>
-        </div>
+      <div class="button-row">
+        <button class="primary" id="thrill-modal-close" type="button">Auswahl übernehmen</button>
       </div>
     </div>
   </div>
@@ -911,8 +1046,6 @@ const firebaseConfig = {
     const choiceModalText = document.getElementById("choice-modal-text");
     const choiceSymbol = document.getElementById("choice-symbol");
     const thrillModal = document.getElementById("thrill-modal");
-    const thrillWarningStep = document.getElementById("thrill-warning-step");
-    const thrillOptionsStep = document.getElementById("thrill-options-step");
     const thrillSelectedNote = document.getElementById("thrill-selected-note");
     const thrillCheckbox = document.querySelector('input[name="activity"][value="Nervenkitzel"]');
     const noBtn = document.getElementById("no-btn");
@@ -928,6 +1061,127 @@ const firebaseConfig = {
       submittedAt: "",
       page: window.location.href
     };
+
+
+    const monthNames = [
+      "Januar", "Februar", "März", "April", "Mai", "Juni",
+      "Juli", "August", "September", "Oktober", "November", "Dezember"
+    ];
+    const weekdayNames = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+    const calendarMonths = [
+      { year: 2026, month: 5 }, { year: 2026, month: 6 }, { year: 2026, month: 7 },
+      { year: 2026, month: 8 }, { year: 2026, month: 9 }, { year: 2026, month: 10 },
+      { year: 2026, month: 11 }, { year: 2027, month: 0 }, { year: 2027, month: 1 },
+      { year: 2027, month: 2 }, { year: 2027, month: 3 }, { year: 2027, month: 4 }
+    ];
+    let calendarIndex = 0;
+
+    const unavailableDates = new Map([
+      ["2026-06-26", "Da kann ich leider nicht."],
+      ["2026-06-27", "Da kann ich leider nicht."],
+      ["2026-07-02", "Da kann ich leider nicht."],
+      ["2026-07-03", "Da kann ich leider nicht."],
+      ["2026-07-04", "Da kann ich leider nicht."],
+      ["2026-07-10", "Da kann ich leider nicht."],
+      ["2026-07-11", "Da kann ich leider nicht."],
+      ["2026-07-13", "Da kann ich leider nicht."],
+      ["2026-07-14", "Da kann ich leider nicht."],
+      ["2026-07-15", "Da kann ich leider nicht."],
+      ["2026-07-16", "Da kann ich leider nicht."],
+      ["2026-07-24", "Da kann ich leider nicht."],
+      ["2026-07-25", "Da kann ich leider nicht."],
+      ["2026-07-31", "Da kann ich leider nicht."],
+      ["2026-08-01", "Da kann ich leider nicht."],
+      ["2026-08-08", "Da kann ich leider nicht."],
+      ["2026-08-21", "Da kann ich nicht – außer du fliegst mit nach Mallorca. 😌"],
+      ["2026-08-22", "Da kann ich nicht – außer du fliegst mit nach Mallorca. 😌"],
+      ["2026-08-23", "Da kann ich nicht – außer du fliegst mit nach Mallorca. 😌"]
+    ]);
+
+    function pad2(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function toISODate(year, monthIndex, day) {
+      return `${year}-${pad2(monthIndex + 1)}-${pad2(day)}`;
+    }
+
+    function todayLocalISO() {
+      const now = new Date();
+      return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+    }
+
+    function renderWeekdays() {
+      const weekdays = document.getElementById("calendar-weekdays");
+      weekdays.innerHTML = weekdayNames.map(day => `<div class="calendar-weekday">${day}</div>`).join("");
+    }
+
+    function renderCalendar() {
+      const title = document.getElementById("calendar-title");
+      const daysContainer = document.getElementById("calendar-days");
+      const prev = document.getElementById("calendar-prev");
+      const next = document.getElementById("calendar-next");
+      const { year, month } = calendarMonths[calendarIndex];
+      const firstDay = new Date(year, month, 1);
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const mondayOffset = (firstDay.getDay() + 6) % 7;
+      const minSelectable = todayLocalISO();
+
+      title.textContent = `${monthNames[month]} ${year}`;
+      prev.disabled = calendarIndex === 0;
+      next.disabled = calendarIndex === calendarMonths.length - 1;
+
+      const pieces = [];
+      for (let i = 0; i < mondayOffset; i += 1) {
+        pieces.push('<div class="calendar-empty"></div>');
+      }
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const iso = toISODate(year, month, day);
+        const isPast = iso < minSelectable;
+        const unavailableReason = unavailableDates.get(iso);
+        const isMallorca = Boolean(unavailableReason && unavailableReason.includes("Mallorca"));
+        const isSelected = document.getElementById("date").value === iso;
+        const classes = ["calendar-day"];
+        if (isPast) classes.push("past");
+        if (unavailableReason) classes.push("unavailable");
+        if (isMallorca) classes.push("mallorca");
+        if (isSelected) classes.push("selected");
+        const disabled = isPast || unavailableReason;
+        const titleText = unavailableReason || (isPast ? "Dieses Datum liegt schon vorbei." : "Verfügbar");
+
+        pieces.push(
+          `<button class="${classes.join(" ")}" type="button" data-date="${iso}" ${disabled ? "disabled" : ""} title="${escapeHtml(titleText)}">${day}</button>`
+        );
+      }
+
+      daysContainer.innerHTML = pieces.join("");
+      daysContainer.querySelectorAll(".calendar-day:not(:disabled)").forEach(button => {
+        button.addEventListener("click", () => selectCalendarDate(button.dataset.date));
+      });
+    }
+
+    function selectCalendarDate(isoDate) {
+      const dateInput = document.getElementById("date");
+      const selectedNote = document.getElementById("selected-date-note");
+      dateInput.value = isoDate;
+      selectedNote.textContent = `Ausgewählt: ${formatDate(isoDate)}`;
+      document.getElementById("date-error").classList.remove("show");
+      renderCalendar();
+    }
+
+    renderWeekdays();
+    renderCalendar();
+
+    document.getElementById("calendar-prev").addEventListener("click", () => {
+      calendarIndex = Math.max(0, calendarIndex - 1);
+      renderCalendar();
+    });
+
+    document.getElementById("calendar-next").addEventListener("click", () => {
+      calendarIndex = Math.min(calendarMonths.length - 1, calendarIndex + 1);
+      renderCalendar();
+    });
 
 
     function showDestroyedPage() {
@@ -980,10 +1234,12 @@ const firebaseConfig = {
     function moveNoButton() {
       const zoneRect = zone.getBoundingClientRect();
       const buttonRect = noBtn.getBoundingClientRect();
+      const isMobile = window.matchMedia("(max-width: 620px)").matches;
       const maxX = Math.max(0, zoneRect.width - buttonRect.width - 8);
       const maxY = Math.max(0, zoneRect.height - buttonRect.height - 8);
+      const minY = isMobile ? Math.min(86, Math.max(0, maxY)) : 0;
       const x = Math.random() * maxX;
-      const y = Math.random() * maxY;
+      const y = minY + Math.random() * Math.max(0, maxY - minY);
 
       noBtn.style.position = "absolute";
       noBtn.style.left = `${x}px`;
@@ -1061,14 +1317,7 @@ const firebaseConfig = {
       choiceModal.classList.add("show");
     }
 
-    function setThrillStep(step) {
-      const showOptions = step === "options";
-      thrillWarningStep.classList.toggle("active", !showOptions);
-      thrillOptionsStep.classList.toggle("active", showOptions);
-    }
-
-    function showThrillModal(step = "warning") {
-      setThrillStep(step);
+    function showThrillModal() {
       thrillModal.classList.add("show");
     }
 
@@ -1082,12 +1331,6 @@ const firebaseConfig = {
       if (thrillSelectedNote) thrillSelectedNote.textContent = "Noch nichts ausgewählt.";
     }
 
-    function cancelThrillChoice() {
-      if (thrillCheckbox) thrillCheckbox.checked = false;
-      resetThrillChoice();
-      closeThrillModal();
-    }
-
     document.querySelectorAll("[data-thrill]").forEach(button => {
       button.addEventListener("click", () => {
         state.thrill = button.dataset.thrill;
@@ -1097,18 +1340,11 @@ const firebaseConfig = {
       });
     });
 
-    document.getElementById("thrill-warning-continue").addEventListener("click", () => showThrillModal("options"));
-    document.getElementById("thrill-warning-back").addEventListener("click", cancelThrillChoice);
-    document.getElementById("thrill-options-back").addEventListener("click", () => showThrillModal("warning"));
     document.getElementById("thrill-modal-close").addEventListener("click", closeThrillModal);
 
     thrillModal.addEventListener("click", event => {
       if (event.target === thrillModal) {
-        if (thrillWarningStep.classList.contains("active")) {
-          cancelThrillChoice();
-        } else {
-          closeThrillModal();
-        }
+        closeThrillModal();
       }
     });
 
@@ -1239,7 +1475,7 @@ const firebaseConfig = {
       if (activities.includes("Nervenkitzel") && !state.thrill) {
         error.textContent = "Beim Nervenkitzel bitte noch eine Unteroption auswählen. Wer A sagt, muss auch ein bisschen Chaos wählen.";
         error.classList.add("show");
-        showThrillModal("options");
+        showThrillModal();
         return;
       }
 
